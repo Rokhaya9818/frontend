@@ -13,7 +13,8 @@ app.use(express.static(path.join(__dirname, 'dist/public')));
 
 // Proxy pour les API
 app.all('/api/*', (req, res) => {
-  const backendUrl = new URL(`http://localhost:8000${req.originalUrl}`);
+  const backendUrl = new URL(`https://one-backend-6.onrender.com${req.originalUrl}`);
+
   
   const options = {
     hostname: backendUrl.hostname,
