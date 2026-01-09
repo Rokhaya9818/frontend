@@ -1,0 +1,46 @@
+# Configuration Netlify pour le frontend React
+# Ce fichier doit être placé à la racine du repository
+
+[build]
+# Commande de build - utilise npm pour compiler le projet React avec Vite
+command = "npm run build"
+# Dossier contenant les fichiers statiques à déployer
+publish = "dist/public"
+
+# Variables d'environnement pour la production
+[build.environment]
+# URL du backend déployé sur Render
+VITE_API_URL = "https://one-backend-6.onrender.com"
+
+# Configuration du serveur de développement
+[dev]
+# Port local pour le développement
+port = 3000
+# Commande de développement
+command = "npm run dev"
+# Publier les fichiers depuis ce répertoire
+publish = "dist/public"
+
+# Redirections et règles de réécriture
+[[redirects]]
+# Redirige toutes les requêtes vers index.html pour le routage côté client
+from = "/*"
+to = "/index.html"
+status = 200
+
+# En-têtes personnalisés pour les fichiers statiques
+[[headers]]
+# S'applique à tous les fichiers
+for = "/*"
+[headers.values]
+# Permet les requêtes cross-origin vers le backend
+Access-Control-Allow-Origin = "*"
+# Améliore la performance avec la mise en cache
+Cache-Control = "public, max-age=31536000, immutable"
+
+# En-têtes spécifiques pour index.html
+[[headers]]
+for = "/index.html"
+[headers.values]
+# Pas de cache pour index.html pour toujours avoir la dernière version
+Cache-Control = "public, max-age=0, must-revalidate"
