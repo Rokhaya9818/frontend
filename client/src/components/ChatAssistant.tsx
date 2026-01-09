@@ -13,7 +13,7 @@ interface Message {
     id: number;
     sender: 'user' | 'bot';
     text: string;
-}
+
 
 // URL de l'API (doit correspondre au proxy dans vite.config.ts)
 const API_ENDPOINT = "/api/assistant/chat";
