@@ -1,10 +1,14 @@
-// Client API REST pour remplacer tRPC
-const API_BASE_URL = "/api";
+// client/src/lib/api.ts
+// Client API REST pour communiquer avec le backend FastAPI
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface DashboardKPIs {
   malaria_cases: string;
   tuberculose_cases: string;
   fvr_humain_cases: number;
+  fvr_humain_deces: number;
+  fvr_humain_gueris: number;
   fvr_animal_cases: number;
   grippe_aviaire_cases: number;
   pm25_recent: string;
@@ -30,169 +34,148 @@ interface RegionMapData {
   total_cases: number;
 }
 
-interface MalariaData {
-  id: number;
-  indicator_code: string;
-  indicator_name: string;
-  year: number;
-  value: string | null;
-  numeric_value: string | null;
-  low_value: string | null;
-  high_value: string | null;
-  created_at: string;
-}
-
-interface TuberculoseData {
-  id: number;
-  indicator_code: string;
-  indicator_name: string;
-  year: number;
-  value: string | null;
-  numeric_value: string | null;
-  low_value: string | null;
-  high_value: string | null;
-  created_at: string;
-}
-
-interface FvrHumainData {
-  id: number;
-  date_bilan: string;
-  cas_confirmes: number;
-  deces: number;
-  gueris: number;
-  region: string | null;
-  district: string | null;
-  taux_letalite: string | null;
-  created_at: string;
-}
-
-interface FvrAnimalData {
-  id: number;
-  annee: number;
-  cas: number;
-  espece: string | null;
-  region: string | null;
-  localisation: string | null;
-  source: string | null;
-  created_at: string;
-}
-
-interface GrippeAviaireData {
-  id: number;
-  report_id: string;
-  date_rapport: string;
-  region: string | null;
-  espece: string | null;
-  maladie: string | null;
-  cas_confirmes: number;
-  deces: number;
-  statut_epidemie: string | null;
-  created_at: string;
-}
-
-interface PollutionAirData {
-  id: number;
-  annee: number;
-  zone: string;
-  concentration_pm25: string | null;
-  created_at: string;
-}
-
-interface RegionData {
-  id: number;
-  nom: string;
-  code: string;
-  latitude: string | null;
-  longitude: string | null;
-  created_at: string;
-}
-
-async function fetchAPI<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
-  let url = `${API_BASE_URL}${endpoint}`;
+// Fonction utilitaire pour faire des appels API
+async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
   
-  // Ajouter les paramètres de requête si présents
-  if (params) {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "Toutes") {
-        searchParams.append(key, String(value));
-      }
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
     });
-    const queryString = searchParams.toString();
-    if (queryString) {
-      url += `?${queryString}`;
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`[API Error] ${endpoint}:`, error);
+    throw error;
   }
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
-  }
-  return response.json();
 }
 
-export const api = {
-  dashboard: {
-    kpis: (filters?: { region?: string; maladie?: string }) => 
-      fetchAPI<DashboardKPIs>("/dashboard/kpis", filters),
-    fvrHumainTotal: (filters?: { region?: string; maladie?: string }) => 
-      fetchAPI<number>("/dashboard/fvr-humain-total", filters),
-    fvrHumainByRegion: (filters?: { region?: string; maladie?: string }) => 
-      fetchAPI<RegionStat[]>("/dashboard/fvr-humain-by-region", filters),
-    fvrAnimalTotal: (filters?: { region?: string; maladie?: string }) => 
-      fetchAPI<number>("/dashboard/fvr-animal-total", filters),
-    fvrAnimalByRegion: (filters?: { region?: string; maladie?: string }) => 
-      fetchAPI<RegionStat[]>("/dashboard/fvr-animal-by-region", filters),
-    malariaByIndicator: () => fetchAPI<IndicatorStat[]>("/dashboard/malaria-by-indicator"),
-    tuberculoseByIndicator: () => fetchAPI<IndicatorStat[]>("/dashboard/tuberculose-by-indicator"),
-    mapData: (filters?: { region?: string; maladie?: string }) => 
-      fetchAPI<RegionMapData[]>("/dashboard/map-data", filters),
+// API Client
+export const apiClient = {
+  // Dashboard endpoints
+  getDashboardKPIs: (region?: string, maladie?: string) => {
+    const params = new URLSearchParams();
+    if (region && region !== 'Toutes') params.append('region', region);
+    if (maladie && maladie !== 'Toutes') params.append('maladie', maladie);
+    
+    const query = params.toString();
+    return fetchAPI<DashboardKPIs>(`/api/dashboard/kpis${query ? '?' + query : ''}`);
   },
-  malaria: {
-    list: (params?: { year_start?: number; year_end?: number }) => {
-      const query = params ? `?${new URLSearchParams(params as any).toString()}` : "";
-      return fetchAPI<MalariaData[]>(`/malaria/list${query}`);
-    },
+
+  getFvrHumainTotal: (region?: string) => {
+    const params = new URLSearchParams();
+    if (region && region !== 'Toutes') params.append('region', region);
+    
+    const query = params.toString();
+    return fetchAPI<number>(`/api/dashboard/fvr-humain-total${query ? '?' + query : ''}`);
   },
-  tuberculose: {
-    list: (params?: { year_start?: number; year_end?: number }) => {
-      const query = params ? `?${new URLSearchParams(params as any).toString()}` : "";
-      return fetchAPI<TuberculoseData[]>(`/tuberculose/list${query}`);
-    },
+
+  getFvrHumainByRegion: (region?: string) => {
+    const params = new URLSearchParams();
+    if (region && region !== 'Toutes') params.append('region', region);
+    
+    const query = params.toString();
+    return fetchAPI<RegionStat[]>(`/api/dashboard/fvr-humain-by-region${query ? '?' + query : ''}`);
   },
-  fvrHumain: {
-    list: () => fetchAPI<FvrHumainData[]>("/fvr-humain/list"),
+
+  getFvrAnimalTotal: (region?: string) => {
+    const params = new URLSearchParams();
+    if (region && region !== 'Toutes') params.append('region', region);
+    
+    const query = params.toString();
+    return fetchAPI<number>(`/api/dashboard/fvr-animal-total${query ? '?' + query : ''}`);
   },
-  fvrAnimal: {
-    list: () => fetchAPI<FvrAnimalData[]>("/fvr-animal/list"),
+
+  getFvrAnimalByRegion: (region?: string) => {
+    const params = new URLSearchParams();
+    if (region && region !== 'Toutes') params.append('region', region);
+    
+    const query = params.toString();
+    return fetchAPI<RegionStat[]>(`/api/dashboard/fvr-animal-by-region${query ? '?' + query : ''}`);
   },
-  grippeAviaire: {
-    list: () => fetchAPI<GrippeAviaireData[]>("/grippe-aviaire/list"),
+
+  getMalariaByIndicator: () => {
+    return fetchAPI<IndicatorStat[]>('/api/dashboard/malaria-by-indicator');
   },
-  pollutionAir: {
-    list: (params?: { year_start?: number; year_end?: number }) => {
-      const query = params ? `?${new URLSearchParams(params as any).toString()}` : "";
-      return fetchAPI<PollutionAirData[]>(`/pollution-air/list${query}`);
-    },
+
+  getTuberculoseByIndicator: () => {
+    return fetchAPI<IndicatorStat[]>('/api/dashboard/tuberculose-by-indicator');
   },
-  regions: {
-    list: () => fetchAPI<RegionData[]>("/regions/list"),
+
+  getMapData: (region?: string, maladie?: string) => {
+    const params = new URLSearchParams();
+    if (region && region !== 'Toutes') params.append('region', region);
+    if (maladie && maladie !== 'Toutes') params.append('maladie', maladie);
+    
+    const query = params.toString();
+    return fetchAPI<RegionMapData[]>(`/api/dashboard/map-data${query ? '?' + query : ''}`);
+  },
+
+  // Malaria endpoints
+  getMalariaList: (yearStart?: number, yearEnd?: number) => {
+    const params = new URLSearchParams();
+    if (yearStart) params.append('year_start', yearStart.toString());
+    if (yearEnd) params.append('year_end', yearEnd.toString());
+    
+    const query = params.toString();
+    return fetchAPI(`/api/malaria/list${query ? '?' + query : ''}`);
+  },
+
+  // Tuberculose endpoints
+  getTuberculoseList: (yearStart?: number, yearEnd?: number) => {
+    const params = new URLSearchParams();
+    if (yearStart) params.append('year_start', yearStart.toString());
+    if (yearEnd) params.append('year_end', yearEnd.toString());
+    
+    const query = params.toString();
+    return fetchAPI(`/api/tuberculose/list${query ? '?' + query : ''}`);
+  },
+
+  // FVR Humain endpoints
+  getFvrHumainList: () => {
+    return fetchAPI('/api/fvr-humain/list');
+  },
+
+  // FVR Animal endpoints
+  getFvrAnimalList: () => {
+    return fetchAPI('/api/fvr-animal/list');
+  },
+
+  // Grippe Aviaire endpoints
+  getGrippeAviaireList: () => {
+    return fetchAPI('/api/grippe-aviaire/list');
+  },
+
+  // Regions endpoints
+  getRegionsList: () => {
+    return fetchAPI('/api/regions/list');
+  },
+
+  // Pollution Air endpoints
+  getPollutionAirList: (yearStart?: number, yearEnd?: number) => {
+    const params = new URLSearchParams();
+    if (yearStart) params.append('year_start', yearStart.toString());
+    if (yearEnd) params.append('year_end', yearEnd.toString());
+    
+    const query = params.toString();
+    return fetchAPI(`/api/pollution-air/list${query ? '?' + query : ''}`);
+  },
+
+  // Assistant endpoint
+  chatWithAssistant: (message: string) => {
+    return fetchAPI('/api/assistant/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
   },
 };
 
-export type { 
-  DashboardKPIs, 
-  RegionStat, 
-  IndicatorStat,
-  RegionMapData,
-  MalariaData,
-  TuberculoseData,
-  FvrHumainData,
-  FvrAnimalData,
-  GrippeAviaireData,
-  PollutionAirData,
-  RegionData
-};
-
-// Helper functions for hooks
-export const fetchMapData = () => api.dashboard.mapData();
+export default apiClient;
