@@ -1,28 +1,52 @@
 <!doctype html>
 <html lang="en">
+    <head>
+          <meta charset="UTF-8" />
+          <meta
+                  name="viewport"
+                  content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+          <link rel="icon" type="image/png" id="favicon" />
+          <link rel="apple-touch-icon" id="apple-icon" />
+          <title id="app-title">Chargement...</title>title>
+          <script>
+                  // Script pour injecter les variables d'environnement dans le DOM
+                  (function() {
+                            const env = window.process?.env || {};
+                            const title = env.VITE_APP_TITLE || 'One Health Dashboard';
+                            const logo = env.VITE_APP_LOGO || '/logo.png';
 
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <link rel="icon" type="image/png" href="%VITE_APP_LOGO%" />
-    <link rel="apple-touch-icon" href="%VITE_APP_LOGO%" />
-    <title>%VITE_APP_TITLE%</title>
-    <!-- Add Google Fonts here, example:
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    -->
-  </head>
+                            document.title = title;
+                            const titleEl = document.getElementById('app-title');
+                            if (titleEl) titleEl.textContent = title;
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
-  </body>
+                            const favicon = document.getElementById('favicon');
+                            if (favicon) favicon.href = logo;
 
-</html>
+                            const appleIcon = document.getElementById('apple-icon');
+                            if (appleIcon) appleIcon.href = logo;
+                  })();
+          </script>
+    </head>
+    <body>
+          <div id="root"></div>div>
+          <script type="module" src="/src/main.tsx"></script>
+          <script>
+                  (function() {
+                            const env = window.process?.env || {};
+                            if (env.VITE_ANALYTICS_ENDPOINT && env.VITE_ANALYTICS_WEBSITE_ID) {
+                                        const script = document.createElement('script');
+                                        script.async = true;
+                                        script.defer = true;
+                                        script.src = env.VITE_ANALYTICS_ENDPOINT + '/umami';
+                                        script.setAttribute('data-website-id', env.VITE_ANALYTICS_WEBSITE_ID);
+                                        document.body.appendChild(script);
+                            }
+                  })();
+          </script>
+    </body>
+</html>html>
+
+
+    </body>
+          </script>
+    </head>
