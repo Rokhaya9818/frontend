@@ -8,7 +8,7 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient( );
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -37,10 +37,20 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+// Déterminer l'URL de l'API en fonction de l'environnement
+const getApiUrl = () => {
+  // En production, utilise la variable d'environnement VITE_API_URL
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL}/api/trpc`;
+  }
+  // En développement, utilise le proxy de Vite
+  return "/api/trpc";
+};
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: getApiUrl( ),
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {
